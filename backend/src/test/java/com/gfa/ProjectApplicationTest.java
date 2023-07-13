@@ -17,8 +17,4 @@ class ProjectApplicationTest {
                             new String[]{"--spring.main.web-environment=false", "--server.port=8082"});
                 });
     }
-
-
-
 }
-
