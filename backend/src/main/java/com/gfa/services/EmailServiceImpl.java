@@ -1,5 +1,7 @@
 package com.gfa.services;
 
+import com.gfa.dtos.RegisterResponseDto;
+import com.gfa.models.User;
 import com.gfa.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -8,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import java.security.SecureRandom;
 
 @Service
 public class EmailServiceImpl implements EmailService {
@@ -18,6 +21,36 @@ public class EmailServiceImpl implements EmailService {
     public EmailServiceImpl(JavaMailSender mailSender, UserRepository userRepository) {
         this.mailSender = mailSender;
         this.userRepository = userRepository;
+    }
+
+    public RegisterResponseDto verifyToken(Long token) throws MessagingException {
+        if (!userRepository.findByVerificationToken(token).isPresent()) {
+            throw new IllegalArgumentException("Invalid token");
+        }
+        User user = userRepository.findByVerificationToken(token).get();
+        if (user.getVerified()) {
+            throw new IllegalArgumentException("Email already verified");
+        }
+        Long now = System.currentTimeMillis() / 1000;
+        if (user.getVerificationTokenExpiresAt() < now) {
+            SecureRandom secureRandom = new SecureRandom();
+            Long newToken = secureRandom.nextLong();
+            user.setVerificationToken(newToken);
+            user.setVerificationTokenExpiresAt((System.currentTimeMillis() / 1000) + 3600);
+            userRepository.save(user);
+
+            sendVerificationEmail(user.getEmail(), newToken);
+
+            throw new IllegalArgumentException("Token expired!");
+        }
+
+        user.setVerified(true);
+        user.setVerifiedAt(System.currentTimeMillis() / 1000);
+        user.setVerificationTokenExpiresAt(0L);
+
+        userRepository.save(user);
+
+        return new RegisterResponseDto("ok");
     }
 
     public void sendVerificationEmail(String email, Long token) throws MessagingException {
