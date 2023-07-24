@@ -7,19 +7,25 @@ import com.gfa.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import javax.servlet.http.HttpServletRequest;
-
 import javax.mail.MessagingException;
 import javax.naming.AuthenticationException;
+import java.security.SecureRandom;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
 public class DatabaseUserService implements UserService, UserDetailsService {
+
     private final UserRepository userRepository;
     @Lazy
     @Autowired
@@ -202,4 +208,43 @@ public class DatabaseUserService implements UserService, UserDetailsService {
         }
 
     }
+
+    @Override
+    public LoginResponseDto login(LoginRequestDto loginDetails) {
+
+        String username = loginDetails.getUsername();
+        String password = loginDetails.getPassword();
+
+        //Data Validation
+        if (username == null || username.isEmpty()) {
+            throw new IllegalArgumentException("Username is required.");
+        }
+        if (username.length() < 4) {
+            throw new IllegalArgumentException("Invalid username.");
+        }
+        if (password == null || password.isEmpty()) {
+            throw new IllegalArgumentException("Password is required.");
+        }
+
+        User user = getUserByUsername(username); //if the user is verified(through email)
+        if (!user.getVerified() || user.getVerified() == null) {
+            // throw new BadCredentialsException("Invalid username or password!");
+            throw new BadCredentialsException("Username is not verified!");
+        }
+
+        if (!isUsernameInDatabase(username)) {  //if the username is registered
+          //  throw new BadCredentialsException("Invalid username or password!");
+            throw new BadCredentialsException("Unregistered username!");
+        }
+
+        if (!verifyUser(username, password)) { //if the password is right for the username
+           // throw new BadCredentialsException("Invalid username or password!");
+            throw new BadCredentialsException("Password is not matching for this username!");
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("token", generateToken(loginDetails.getUsername(), loginDetails.getPassword()));
+        return new LoginResponseDto("success", data);
+    }
+  
 }
