@@ -17,15 +17,16 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import javax.servlet.http.HttpServletRequest;
+
 import javax.mail.MessagingException;
 import javax.naming.AuthenticationException;
 import java.security.SecureRandom;
-import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Service
 public class DatabaseUserService implements UserService, UserDetailsService {
-
     private final UserRepository userRepository;
     @Lazy
     @Autowired
@@ -35,7 +36,7 @@ public class DatabaseUserService implements UserService, UserDetailsService {
     @Lazy
     @Autowired
     private PasswordEncoder passwordEncoder;
-    private EmailService emailService;
+    private final EmailService emailService;
     @Autowired
     private HttpServletRequest request;
 
@@ -45,24 +46,70 @@ public class DatabaseUserService implements UserService, UserDetailsService {
     }
 
     @Override
+    public boolean verifyUser(String username, String password) {
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new NoSuchElementException("User not found"));
+        return new BCryptPasswordEncoder().matches(password, user.getPassword());
+    }
+
+    public boolean checkUserNameExists(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
+    @Override
+    public String generateToken(String username, String password) {
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        return tokenProvider.generateToken(authentication);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
+
+    @Override
     public User createUser(User user) {
         return userRepository.save(user);
     }
 
     @Override
-    public User updateUser(Long id, UserRequestDto userRequestDto) {
+    public User updateUser(Long id, UserRequestDto userRequestDto) throws MessagingException {
         User user = getUserById(id);
-
-        if (!user.getEmail().contains(userRequestDto.getEmail())) {
-            //repeat email verification process
-            user.setVerified(null);
+        if (!user.getUsername().equals(userRequestDto.getUsername())) {
+            user.setUsername(userRequestDto.getUsername());
         }
-
-        user.setUsername(userRequestDto.getUsername());
-        user.setEmail(userRequestDto.getEmail());
-        user.setPassword(userRequestDto.getPassword());
-
+        if (!user.getEmail().equals(userRequestDto.getEmail())) {
+            user.setVerified(false);
+            user.setVerifiedAt(null);
+            SecureRandom secureRandom = new SecureRandom();
+            Long token = secureRandom.nextLong();
+            user.setVerificationToken(token);
+            user.setVerificationTokenExpiresAt((System.currentTimeMillis() / 1000) + 3600);
+            emailService.sendVerificationEmail(user.getEmail(), token);
+            user.setEmail(userRequestDto.getEmail());
+        }
+        if (!user.getPassword().equals(userRequestDto.getPassword())) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         return userRepository.save(user);
+    }
+
+    @Override
+    public RegisterResponseDto addUser(UserRequestDto newUserDTO) throws AuthenticationException, MessagingException {
+        if (newUserDTO == null)
+            throw new IllegalArgumentException("Request body is empty");
+        validateInputData(newUserDTO);
+        User user = new User(newUserDTO.getUsername(), newUserDTO.getEmail(), newUserDTO.getPassword());
+        user.setVerified(false);
+        user.setVerifiedAt(null);
+        SecureRandom secureRandom = new SecureRandom();
+        Long token = secureRandom.nextLong();
+        user.setVerificationToken(token);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setVerificationTokenExpiresAt((System.currentTimeMillis() / 1000) + 3600);
+        userRepository.save(user);
+        emailService.sendVerificationEmail(user.getEmail(), token);
+        return new RegisterResponseDto("OK");
     }
 
     @Override
@@ -81,6 +128,11 @@ public class DatabaseUserService implements UserService, UserDetailsService {
     }
 
     @Override
+    public User getUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
+
+    @Override
     public boolean isUsernameInDatabase(String username) {
         return userRepository.existsByUsername(username);
     }
@@ -89,7 +141,7 @@ public class DatabaseUserService implements UserService, UserDetailsService {
     public boolean isEmailInDatabase(String email) {
         return userRepository.existsByEmail(email);
     }
-    
+
     @Override
     public UserProfileResponseDto updateUserProfile(UserProfileRequestDto updatedUser) throws AuthenticationException {
         String token = request.getHeader("Authorization");
@@ -157,6 +209,7 @@ public class DatabaseUserService implements UserService, UserDetailsService {
         return email.matches("([a-zA-Z0-9]+(?:[._+-][a-zA-Z0-9]+)*)@([a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*[.][a-zA-Z]{2,})");
     }
 
+
     @Override
     public void validateId(Long id) {
         if (!(id > 0)) {
@@ -175,23 +228,26 @@ public class DatabaseUserService implements UserService, UserDetailsService {
 
     @Override
     public void validateInputData(UserRequestDto userRequestDto) throws AuthenticationException {
-        if (userRequestDto.getUsername() == null || userRequestDto.getUsername().length() == 0) {
+        if (userRequestDto.getUsername() == null || userRequestDto.getUsername().isEmpty()) {
             throw new IllegalArgumentException("Username is required");
         }
-        if (userRequestDto.getEmail() == null || userRequestDto.getEmail().length() == 0) {
+        if (userRequestDto.getUsername().length() < 4)
+            throw new IllegalArgumentException("Username must be at least 4 characters long");
+
+        if (userRequestDto.getEmail() == null || userRequestDto.getEmail().isEmpty()) {
             throw new IllegalArgumentException("Email is required");
         }
-        if (!userRequestDto.getEmail().contains("@") || !userRequestDto.getEmail().contains(".")) {
+        if (!userRequestDto.getEmail().matches("([a-zA-Z0-9]+(?:[._+-][a-zA-Z0-9]+)*)@([a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*[.][a-zA-Z]{2,})")) {
             throw new IllegalArgumentException("Invalid email");
         }
-        if (userRequestDto.getPassword() == null || userRequestDto.getPassword().length() == 0) {
+        if (userRequestDto.getPassword() == null || userRequestDto.getPassword().isEmpty()) {
             throw new IllegalArgumentException("Password is required");
         }
-        if (userRequestDto.getPassword().length() < 6 ) {
-            throw new IllegalArgumentException("Password too short");
+        if (userRequestDto.getPassword().length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters long");
         }
         if (isUsernameInDatabase(userRequestDto.getUsername())) {
-            throw new AuthenticationException("Username already exists");
+            throw new AuthenticationException("Username is already taken");
         }
         if (isEmailInDatabase(userRequestDto.getEmail())) {
             throw new AuthenticationException("Email already exists");
@@ -203,13 +259,11 @@ public class DatabaseUserService implements UserService, UserDetailsService {
         if (!userRequestDto.getEmail().contains("@") ||
                 !userRequestDto.getEmail().contains(".") ||
                 //need to solve validation of username
-                userRequestDto.getPassword().length() < 6 ) {
+                userRequestDto.getPassword().length() < 6) {
             throw new IllegalArgumentException("Invalid data");
         }
-
     }
 
-    @Override
     public LoginResponseDto login(LoginRequestDto loginDetails) {
 
         String username = loginDetails.getUsername();
@@ -240,11 +294,10 @@ public class DatabaseUserService implements UserService, UserDetailsService {
         if (!verifyUser(username, password)) { //if the password is right for the username
            // throw new BadCredentialsException("Invalid username or password!");
             throw new BadCredentialsException("Password is not matching for this username!");
-        }
+       }
 
         Map<String, Object> data = new HashMap<>();
         data.put("token", generateToken(loginDetails.getUsername(), loginDetails.getPassword()));
         return new LoginResponseDto("success", data);
     }
-  
 }

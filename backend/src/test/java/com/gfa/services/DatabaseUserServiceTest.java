@@ -7,6 +7,7 @@ import com.gfa.dtos.UserRequestDto;
 import com.gfa.models.User;
 import com.gfa.repositories.UserRepository;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -72,7 +73,7 @@ class DatabaseUserServiceTest {
     }
 
     @Test
-    void test_updateUser() {
+    void test_updateUser() throws MessagingException {
         User user = new User("john123", "john123@mail.com", "123");
         UserRequestDto userRequestDto = new UserRequestDto("john123", "john123@mail.com", "321");
         user.setPassword("321");
@@ -84,6 +85,164 @@ class DatabaseUserServiceTest {
         assertEquals("john123", result.getUsername());
         assertEquals("john123@mail.com", result.getEmail());
         assertEquals("321", result.getPassword());
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser() throws MessagingException, AuthenticationException {
+        when(userRepository.existsByUsername(Mockito.<String>any())).thenReturn(true);
+        assertThrows(AuthenticationException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("janedoe", "jane.doe@example.org", "iloveyou")));
+        verify(userRepository).existsByUsername(Mockito.<String>any());
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser2() throws MessagingException, AuthenticationException {
+        when(userRepository.existsByEmail(Mockito.<String>any())).thenReturn(true);
+        when(userRepository.existsByUsername(Mockito.<String>any())).thenReturn(false);
+        assertThrows(AuthenticationException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("janedoe", "jane.doe@example.org", "iloveyou")));
+        verify(userRepository).existsByEmail(Mockito.<String>any());
+        verify(userRepository).existsByUsername(Mockito.<String>any());
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser3() throws MessagingException, AuthenticationException {
+        assertThrows(IllegalArgumentException.class,
+                () -> databaseUserService.addUser(new UserRequestDto(null, "jane.doe@example.org", "iloveyou")));
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser4() throws MessagingException, AuthenticationException {
+        assertThrows(IllegalArgumentException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("42", "jane.doe@example.org", "iloveyou")));
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser5() throws MessagingException, AuthenticationException {
+        assertThrows(IllegalArgumentException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("", "jane.doe@example.org", "iloveyou")));
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser6() throws MessagingException, AuthenticationException {
+        when(userRepository.existsByUsername(Mockito.<String>any())).thenReturn(true);
+        assertThrows(AuthenticationException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("janedoe", "john.smith@example.org", "iloveyou")));
+        verify(userRepository).existsByUsername(Mockito.<String>any());
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser7() throws MessagingException, AuthenticationException {
+        when(userRepository.existsByUsername(Mockito.<String>any())).thenReturn(true);
+        assertThrows(AuthenticationException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("janedoe", "prof.einstein@example.org", "iloveyou")));
+        verify(userRepository).existsByUsername(Mockito.<String>any());
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser8() throws MessagingException, AuthenticationException {
+        when(userRepository.existsByUsername(Mockito.<String>any())).thenReturn(true);
+        assertThrows(AuthenticationException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("janedoe", "U+U+U@U-U-U.UUUU", "iloveyou")));
+        verify(userRepository).existsByUsername(Mockito.<String>any());
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser9() throws MessagingException, AuthenticationException {
+        assertThrows(IllegalArgumentException.class, () -> databaseUserService.addUser(new UserRequestDto("janedoe",
+                "([a-zA-Z0-9]+(?:[._+-][a-zA-Z0-9]+)*)@([a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*[.][a-zA-Z]{2,})", "iloveyou")));
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser10() throws MessagingException, AuthenticationException {
+        assertThrows(IllegalArgumentException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("janedoe", null, "iloveyou")));
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser11() throws MessagingException, AuthenticationException {
+        assertThrows(IllegalArgumentException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("janedoe", "", "iloveyou")));
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser12() throws MessagingException, AuthenticationException {
+        assertThrows(IllegalArgumentException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("janedoe", "jane.doe@example.org", null)));
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser13() throws MessagingException, AuthenticationException {
+        assertThrows(IllegalArgumentException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("janedoe", "jane.doe@example.org", "42")));
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser14() throws MessagingException, AuthenticationException {
+        assertThrows(IllegalArgumentException.class,
+                () -> databaseUserService.addUser(new UserRequestDto("janedoe", "jane.doe@example.org", "")));
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    void testAddUser15() throws MessagingException, AuthenticationException {
+        assertThrows(IllegalArgumentException.class, () -> databaseUserService.addUser(null));
+    }
+
+    /**
+     * Method under test: {@link DatabaseUserService#addUser(UserRequestDto)}
+     */
+    @Test
+    @Disabled
+    void testAddUser16() throws MessagingException, AuthenticationException {
+        UserRequestDto newUserDTO = mock(UserRequestDto.class);
+        when(newUserDTO.getUsername()).thenThrow(new IllegalArgumentException("foo"));
+        databaseUserService.addUser(newUserDTO);
+        verify(newUserDTO).getUsername();
     }
 
     @Test
@@ -200,6 +359,7 @@ class DatabaseUserServiceTest {
         verify(userRepository).findByUsername(Mockito.<String>any());
         verify(httpServletRequest).getHeader(Mockito.<String>any());
     }
+
     @Test
     void test_updateUserProfile_validInput() throws AuthenticationException {
         when(httpServletRequest.getHeader(Mockito.<String>any())).thenReturn("Bearer valid_token");
@@ -231,4 +391,3 @@ class DatabaseUserServiceTest {
         verify(httpServletRequest).getHeader(Mockito.<String>any());
     }
 }
-

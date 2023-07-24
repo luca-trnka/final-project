@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.mail.MessagingException;
 import javax.naming.AuthenticationException;
-import java.util.NoSuchElementException;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -23,9 +22,10 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponseDto> registerUser(@RequestBody UserRequestDto newUserDTO) throws AuthenticationException, MessagingException {
+    public ResponseEntity<RegisterResponseDto> registerUser(@RequestBody (required = false) UserRequestDto newUserDTO) throws AuthenticationException, MessagingException {
         return ResponseEntity.status(CREATED).body(userService.addUser(newUserDTO));
     }
+
     @PostMapping("/login")
     public ResponseEntity<Object> loginUser(@RequestBody LoginRequestDto loginDetails) {
         return ResponseEntity.status(OK).body(userService.login(loginDetails));
@@ -40,11 +40,6 @@ public class AuthController {
     @ExceptionHandler(AuthenticationException.class)
     private ResponseEntity<ErrorResponseDto> authenticationExceptionHandler(Exception e) {
         return ResponseEntity.status(CONFLICT).body(new ErrorResponseDto(e.getMessage()));
-    }
-
-    @ExceptionHandler(NoSuchElementException.class)
-    private ResponseEntity<ErrorResponseDto> noSuchElementExceptionExceptionHandler(Exception e) {
-        return ResponseEntity.status(NOT_FOUND).body(new ErrorResponseDto(e.getMessage()));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
