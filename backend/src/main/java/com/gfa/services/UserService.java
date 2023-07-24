@@ -1,9 +1,10 @@
 package com.gfa.services;
 
-import com.gfa.dtos.UserRequestDto;
+import com.gfa.dtos.*;
 import com.gfa.models.User;
 
 import javax.naming.AuthenticationException;
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,4 +30,7 @@ public interface UserService {
     void validateInputData(UserRequestDto userRequestDto) throws AuthenticationException;
 
     void validateUpdatedInputData(UserRequestDto userRequestDto);
+  
+    UserProfileResponseDto updateUserProfile(UserProfileRequestDto updatedUser) throws AuthenticationException;
+
 }

@@ -1,14 +1,13 @@
 package com.gfa.controllers;
 
-import com.gfa.dtos.ErrorResponseDto;
-import com.gfa.dtos.UserRequestDto;
-import com.gfa.dtos.UserResponseDto;
+import com.gfa.dtos.*;
 import com.gfa.models.User;
 import com.gfa.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.mail.MessagingException;
 import javax.naming.AuthenticationException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -59,8 +58,8 @@ public class UserRestController {
         User user = userService.updateUser(id, userRequestDto);
         //need to solve 'verified_at'
         return ResponseEntity.status(200).body(new UserResponseDto(user.getId(), user.getUsername(), user.getEmail(), LocalDateTime.now().toString()));
-    }
-
+    } 
+    
     @DeleteMapping("/{id}")
     public ResponseEntity<?> destroy(@PathVariable Long id) {
         userService.validateId(id);
@@ -68,6 +67,11 @@ public class UserRestController {
         User user = userService.getUserById(id);
         userService.deleteUser(user);
         return ResponseEntity.status(201).build();
+    }
+  
+    @PatchMapping
+    public ResponseEntity<UserProfileResponseDto> updateUserProfile(@RequestBody UserProfileRequestDto updatedUser) throws AuthenticationException {
+        return ResponseEntity.ok(userService.updateUserProfile(updatedUser));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -86,5 +90,6 @@ public class UserRestController {
     public ResponseEntity<ErrorResponseDto> noSuchElementExceptionExceptionHandler(Exception e){
         ErrorResponseDto response = new ErrorResponseDto(e.getMessage());
         return ResponseEntity.status(404).body(response);
+
     }
 }

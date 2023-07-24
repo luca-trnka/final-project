@@ -1,17 +1,56 @@
 package com.gfa.services;
 
+import com.gfa.config.JwtTokenProvider;
+import com.gfa.dtos.UserProfileRequestDto;
+import com.gfa.dtos.UserProfileResponseDto;
 import com.gfa.dtos.UserRequestDto;
 import com.gfa.models.User;
+import com.gfa.repositories.UserRepository;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import javax.mail.MessagingException;
+import javax.naming.AuthenticationException;
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+@ContextConfiguration(classes = {DatabaseUserService.class})
+@ExtendWith(SpringExtension.class)
 class DatabaseUserServiceTest {
+    @MockBean
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private DatabaseUserService databaseUserService;
+
+    @MockBean
+    private EmailService emailService;
+
+    @MockBean
+    private HttpServletRequest httpServletRequest;
+
+    @MockBean
+    private JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private PasswordEncoder passwordEncoder;
+
+    @MockBean
+    private UserRepository userRepository;
+
     private static UserService userService;
 
     @BeforeAll
@@ -132,4 +171,64 @@ class DatabaseUserServiceTest {
 
         assertFalse(result);
     }
+  
+    @Test
+    void test_updateUserProfile() throws AuthenticationException {
+        when(httpServletRequest.getHeader(Mockito.<String>any())).thenReturn("helloworld@a.sk");
+        assertThrows(AuthenticationException.class, () -> databaseUserService
+                .updateUserProfile(new UserProfileRequestDto("name", "helloworld@a.sk", "123456789")));
+        verify(httpServletRequest).getHeader(Mockito.<String>any());
+    }
+
+    @Test
+    void test_updateUserProfile2() throws AuthenticationException {
+        when(jwtTokenProvider.getUsernameFromToken(Mockito.<String>any())).thenReturn("pokemon");
+
+        User user = new User();
+        user.setEmail("helloworld@a.sk");
+        user.setId(1L);
+        user.setPassword("123456789");
+        user.setUsername("pokemon");
+        Optional<User> ofResult = Optional.of(user);
+        when(userRepository.existsByUsername(Mockito.<String>any())).thenReturn(true);
+        when(userRepository.findByUsername(Mockito.<String>any())).thenReturn(ofResult);
+        when(httpServletRequest.getHeader(Mockito.<String>any())).thenReturn("Bearer ");
+        assertThrows(IllegalArgumentException.class, () -> databaseUserService
+                .updateUserProfile(new UserProfileRequestDto("name", "helloworld@a.sk", "123456789")));
+        verify(jwtTokenProvider).getUsernameFromToken(Mockito.<String>any());
+        verify(userRepository).existsByUsername(Mockito.<String>any());
+        verify(userRepository).findByUsername(Mockito.<String>any());
+        verify(httpServletRequest).getHeader(Mockito.<String>any());
+    }
+    @Test
+    void test_updateUserProfile_validInput() throws AuthenticationException {
+        when(httpServletRequest.getHeader(Mockito.<String>any())).thenReturn("Bearer valid_token");
+
+        User user = new User();
+        user.setEmail("helloworld@a.sk");
+        user.setId(1L);
+        user.setPassword("123456789");
+        user.setUsername("pokemon");
+        Optional<User> ofResult = Optional.of(user);
+        when(userRepository.findByUsername(Mockito.<String>any())).thenReturn(ofResult);
+
+        UserProfileRequestDto validInput = new UserProfileRequestDto("new_username", "new_email@a.sk", "new_password");
+        UserProfileResponseDto result = databaseUserService.updateUserProfile(validInput);
+
+        assertEquals(user.getId(), result.getId());
+        assertEquals(validInput.getName(), result.getName());
+        assertEquals(validInput.getEmail(), result.getEmail());
+        verify(httpServletRequest).getHeader(Mockito.<String>any());
+    }
+  
+    @Test
+    void test_updateUserProfile_invalidToken() {
+        when(httpServletRequest.getHeader(Mockito.<String>any())).thenReturn(null);
+
+        assertThrows(AuthenticationException.class, () -> databaseUserService
+                .updateUserProfile(new UserProfileRequestDto("name", "helloworld@a.sk", "123456789")));
+
+        verify(httpServletRequest).getHeader(Mockito.<String>any());
+    }
 }
+
