@@ -37,8 +37,8 @@ public class DatabaseProjectService implements ProjectService {
 
     @Override
     public ProjectResponseDto addProject(ProjectRequestDto projectRequestDto) throws AuthenticationException {
-        if (projectRequestDto == null) // TODO improve
-            throw new IllegalArgumentException("Request body is empty or does not contain valid JSON");
+        if (projectRequestDto == null)
+            throw new IllegalArgumentException("Request body is empty");
 
         verifyName(projectRequestDto.getName());
         Project project = new Project(projectRequestDto.getName(), projectRequestDto.getDescription());

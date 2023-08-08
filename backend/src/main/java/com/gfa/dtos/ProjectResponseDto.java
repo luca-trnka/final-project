@@ -5,10 +5,10 @@ import com.gfa.models.Instance;
 import java.util.List;
 
 public final class ProjectResponseDto {
-    private Long id;
-    private String name;
-    private String description;
-    private List<Instance> instances;
+    private final Long id;
+    private final String name;
+    private final String description;
+    private final List<Instance> instances;
 
     public ProjectResponseDto(Long id, String name, String description, List<Instance> instances) {
         this.id = id;

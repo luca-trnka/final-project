@@ -22,10 +22,12 @@ public class RoleRestController {
     public RoleRestController(RoleService roleService) {
         this.roleService = roleService;
     }
+
     @GetMapping("")
     public ResponseEntity<List<RoleResponseDto>> index() {
         return ResponseEntity.ok(roleService.getAllRoles());
     }
+
     @PostMapping("/")
     public ResponseEntity<RoleRequestDto> store(@RequestBody RoleRequestDto roleRequestDto) throws AuthenticationException {
         return ResponseEntity.status(201).body(roleService.storeRole(roleRequestDto));
@@ -35,13 +37,14 @@ public class RoleRestController {
     public ResponseEntity<RoleResponseDto> show(@PathVariable("id") Long id) {
         return ResponseEntity.ok(roleService.findRole(id));
     }
+
     @PatchMapping("/{id}")
-    public ResponseEntity<RoleResponseDto> update(@PathVariable("id") Long id, @RequestBody RoleRequestDto roleRequestDto) throws AuthenticationException {
+    public ResponseEntity<RoleResponseDto> update(@PathVariable("id") Long id, @RequestBody RoleRequestDto roleRequestDto) {
         return ResponseEntity.ok(roleService.updateRole(id, roleRequestDto.getRole()));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> destroy(@PathVariable("id") Long id) {
+    public ResponseEntity<Void> destroy(@PathVariable("id") Long id) {
         roleService.deleteRole(id);
         return ResponseEntity.status(201).build();
     }
@@ -63,6 +66,4 @@ public class RoleRestController {
         ErrorResponseDto response = new ErrorResponseDto(e.getMessage());
         return ResponseEntity.status(404).body(response);
     }
-
 }
-

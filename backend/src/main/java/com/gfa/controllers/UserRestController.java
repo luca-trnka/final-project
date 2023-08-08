@@ -27,8 +27,7 @@ public class UserRestController {
     @GetMapping
     public List<UserResponseDto> index() {
         return userService.listUsers().stream()
-                //need to solve 'verified_at'
-                .map(user -> new UserResponseDto(user.getId(), user.getUsername(), user.getEmail(), LocalDateTime.now().toString()))
+                .map(user -> new UserResponseDto(user.getId(), user.getUsername(), user.getEmail(), user.getVerifiedAt()))
                 .collect(Collectors.toList());
     }
 
@@ -37,8 +36,7 @@ public class UserRestController {
         userService.validateInputData(userRequestDto);
         User user = new User(userRequestDto.getUsername(), userRequestDto.getEmail(), userRequestDto.getPassword());
         userService.createUser(user);
-        //need to solve 'verified_at'
-        return ResponseEntity.status(201).body(new UserResponseDto(user.getId(), user.getUsername(), user.getEmail(), LocalDateTime.now().toString()));
+        return ResponseEntity.status(201).body(new UserResponseDto(user.getId(), user.getUsername(), user.getEmail(), user.getVerifiedAt()));
     }
 
     @GetMapping("/{id}")
@@ -46,20 +44,18 @@ public class UserRestController {
         userService.validateId(id);
         userService.validateUser(id);
         User user = userService.getUserById(id);
-        //need to solve 'verified_at'
-        return ResponseEntity.status(200).body(new UserResponseDto(user.getId(), user.getUsername(), user.getEmail(), LocalDateTime.now().toString()));
+        return ResponseEntity.status(200).body(new UserResponseDto(user.getId(), user.getUsername(), user.getEmail(), user.getVerifiedAt()));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<UserResponseDto> update(@PathVariable Long id, @RequestBody UserRequestDto userRequestDto) throws AuthenticationException {
+    public ResponseEntity<UserResponseDto> update(@PathVariable Long id, @RequestBody UserRequestDto userRequestDto) throws MessagingException {
         userService.validateId(id);
         userService.validateUser(id);
         userService.validateUpdatedInputData(userRequestDto);
         User user = userService.updateUser(id, userRequestDto);
-        //need to solve 'verified_at'
-        return ResponseEntity.status(200).body(new UserResponseDto(user.getId(), user.getUsername(), user.getEmail(), LocalDateTime.now().toString()));
-    } 
-    
+        return ResponseEntity.status(200).body(new UserResponseDto(user.getId(), user.getUsername(), user.getEmail(), user.getVerifiedAt()));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> destroy(@PathVariable Long id) {
         userService.validateId(id);
@@ -90,6 +86,5 @@ public class UserRestController {
     public ResponseEntity<ErrorResponseDto> noSuchElementExceptionExceptionHandler(Exception e){
         ErrorResponseDto response = new ErrorResponseDto(e.getMessage());
         return ResponseEntity.status(404).body(response);
-
     }
 }

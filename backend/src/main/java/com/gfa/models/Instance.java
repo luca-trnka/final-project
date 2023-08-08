@@ -10,6 +10,7 @@ public class Instance {
     private String name;
     private String region;
     private String operatingSystem;
+    private String size;
 
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id")
@@ -30,10 +31,11 @@ public class Instance {
         this.project = project;
     }
 
-    public Instance(String name, String region, String operatingSystem) {
+    public Instance(String name, String region, String operatingSystem, String size) {
         this.name = name;
         this.region = region;
         this.operatingSystem = operatingSystem;
+        this.size = size;
     }
 
     public Long getId() {
@@ -82,5 +84,13 @@ public class Instance {
 
     public void setProject(Project project) {
         this.project = project;
+    }
+
+    public String getSize() {
+        return size;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
     }
 }

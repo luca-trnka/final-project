@@ -35,11 +35,10 @@ public interface UserService {
     void validateInputData(UserRequestDto userRequestDto) throws AuthenticationException;
 
     void validateUpdatedInputData(UserRequestDto userRequestDto);
-  
-    UserProfileResponseDto updateUserProfile(UserProfileRequestDto updatedUser) throws AuthenticationException;
 
     Object login(LoginRequestDto loginDetails);
 
     RegisterResponseDto addUser(UserRequestDto newUserDTO) throws AuthenticationException, MessagingException;
+  
     UserProfileResponseDto updateUserProfile(UserProfileRequestDto updatedUser) throws AuthenticationException;
 }

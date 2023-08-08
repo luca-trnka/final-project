@@ -37,6 +37,7 @@ public class DatabaseRoleService implements RoleService {
         return roleRepository.findAll().stream()
                 .anyMatch(role -> role.getName().equals(roleName));
     }
+
     @Override
     public Role getRoleById(Long id) {
         return roleRepository.findRoleById(id);
@@ -93,5 +94,3 @@ public class DatabaseRoleService implements RoleService {
         }
     }
 }
-
-

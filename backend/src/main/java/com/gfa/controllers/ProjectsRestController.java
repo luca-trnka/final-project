@@ -45,7 +45,7 @@ public class ProjectsRestController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> destroy(@PathVariable String id) {
+    public ResponseEntity<Void> destroy(@PathVariable String id) {
         projectService.deleteProjectById(id);
         return ResponseEntity.ok().build();
     }

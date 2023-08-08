@@ -7,9 +7,9 @@ public class UserResponseDto {
     private final String username;
     private final String email;
     @JsonProperty("verified_at")
-    private final String verifiedAt;
+    private final Long verifiedAt;
 
-    public UserResponseDto(Long id, String username, String email, String verifiedAt) {
+    public UserResponseDto(Long id, String username, String email, Long verifiedAt) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -28,7 +28,7 @@ public class UserResponseDto {
         return email;
     }
 
-    public String getVerified_at() {
+    public Long getVerified_at() {
         return verifiedAt;
     }
 }

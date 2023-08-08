@@ -18,12 +18,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
-
 import javax.mail.MessagingException;
 import javax.naming.AuthenticationException;
+import javax.servlet.http.HttpServletRequest;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 @Service
 public class DatabaseUserService implements UserService, UserDetailsService {
@@ -36,11 +38,11 @@ public class DatabaseUserService implements UserService, UserDetailsService {
     @Lazy
     @Autowired
     private PasswordEncoder passwordEncoder;
-    private final EmailService emailService;
+    private EmailService emailService;
     @Autowired
     private HttpServletRequest request;
 
-    public DatabaseUserService(UserRepository userRepository, EmailService emailService) {
+    public DatabaseUserService(UserRepository userRepository,EmailService emailService){
         this.userRepository = userRepository;
         this.emailService = emailService;
     }
@@ -100,6 +102,8 @@ public class DatabaseUserService implements UserService, UserDetailsService {
             throw new IllegalArgumentException("Request body is empty");
         validateInputData(newUserDTO);
         User user = new User(newUserDTO.getUsername(), newUserDTO.getEmail(), newUserDTO.getPassword());
+//        logger.log(Level.INFO, user); // TODO
+        System.err.println(user);
         user.setVerified(false);
         user.setVerifiedAt(null);
         SecureRandom secureRandom = new SecureRandom();
@@ -129,7 +133,7 @@ public class DatabaseUserService implements UserService, UserDetailsService {
 
     @Override
     public User getUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Unregistered username!"));
     }
 
     @Override
@@ -287,14 +291,14 @@ public class DatabaseUserService implements UserService, UserDetailsService {
         }
 
         if (!isUsernameInDatabase(username)) {  //if the username is registered
-          //  throw new BadCredentialsException("Invalid username or password!");
+            //  throw new BadCredentialsException("Invalid username or password!");
             throw new BadCredentialsException("Unregistered username!");
         }
 
         if (!verifyUser(username, password)) { //if the password is right for the username
-           // throw new BadCredentialsException("Invalid username or password!");
+            // throw new BadCredentialsException("Invalid username or password!");
             throw new BadCredentialsException("Password is not matching for this username!");
-       }
+        }
 
         Map<String, Object> data = new HashMap<>();
         data.put("token", generateToken(loginDetails.getUsername(), loginDetails.getPassword()));

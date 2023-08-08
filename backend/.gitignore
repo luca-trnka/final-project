@@ -1,6 +1,13 @@
 .env
 .DS_Store
 
+**/.terraform/*
+*/terraform.tfvars
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -27,4 +34,3 @@ bin/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-

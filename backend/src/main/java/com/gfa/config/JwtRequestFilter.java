@@ -3,6 +3,8 @@ package com.gfa.config;
 
 import com.gfa.services.DatabaseUserService;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -20,6 +22,8 @@ import java.io.IOException;
 
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
+    private static final Logger logger = LoggerFactory.getLogger(JwtRequestFilter.class);
+
     private final DatabaseUserService userService;
     @Autowired
     JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
@@ -57,7 +61,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             String bearerToken = request.getHeader("Authorization");
             return bearerToken.substring(7);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            logger.debug(e.getMessage());
         }
         return null;
     }
